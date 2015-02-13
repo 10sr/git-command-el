@@ -1,7 +1,7 @@
 ;;; git-command.el --- Dead simple git command interface
 
 ;; Author: 10sr <>
-;; URL: https://github.com/10sr/emacs-lisp/blob/master/git-command.el
+;; URL: https://github.com/10sr/git-command.el
 ;; Version: 0.1
 ;; Package-Requires: ()
 ;; Keywords: utility git
