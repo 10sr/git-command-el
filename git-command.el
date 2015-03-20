@@ -369,7 +369,11 @@ process."
         ;; if this command is not a view command
         (and git-command-use-emacsclient
              (require 'server nil t)
-             (not (server-running-p))
+             ;; NOTE: In Cygwin environment server-running-p blocks forever
+             ;; Skip checking server and always restart server in cygwin
+             (or (eq system-type
+                     'cygwin)
+                 (not (server-running-p)))
              (server-start))
         (let ((process-environment
                (if git-command-use-emacsclient
