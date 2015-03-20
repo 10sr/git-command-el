@@ -381,7 +381,12 @@ process."
                               (git-command--construct-emacsclient-command))
                      ,@process-environment)
                  process-environment)))
-          (git-command-term-shell-command
+          (term-run
+           shell-file-name
+           (if new-buffer-p
+               (generate-new-buffer "*git command*")
+             "*git command*")
+           shell-command-switch
            (concat "git "
                    (git-command-construct-commandline
                     ;; TODO: fix colorize: currently output is not colorized
@@ -389,24 +394,17 @@ process."
                       ,@options "-c" "color.ui=always")
                     command
                     args))
-           (if new-buffer-p
-               (generate-new-buffer "*git command*")
-             "*git command*")))))))
+           ))))))
 
 (eval-when-compile
   (require 'term nil t))
-(defvar term-shell-command-history nil
-  "History for term-shell-command.")
-(defun git-command-term-shell-command (command &optional buffer-or-name)
-  "Run COMMAND in terminal emulator.
+(defun git-command-term-run (program &optional buffer-or-name &rest args)
+  "Run PROGRAM in terminal emulator.
 If BUFFER-OR-NAME is given, use this buffer.  In this case, old process in the
 buffer is destroyed.  Otherwise, new buffer is generated automatically from
-COMMAND."
-  (interactive (list (read-shell-command "Run program: "
-                                         nil
-                                         'term-shell-command-history)))
-  (let* ((name (car (split-string command
-                                  " ")))
+COMMAND.
+ARGS will be passed to PROGRAM."
+  (let* ((name program)
          (buf (if buffer-or-name
                   (get-buffer-create buffer-or-name)
                 (generate-new-buffer (concat "*"
@@ -425,7 +423,7 @@ COMMAND."
         (goto-char (point-max))
         (insert "\n")
         (insert "Start executing "
-                command)
+                program)
         (add-text-properties (point-at-bol)
                              (point-at-eol)
                              '(face bold))
@@ -434,10 +432,9 @@ COMMAND."
       (term-mode)
       (term-exec buf
                  (concat "term-" name)
-                 shell-file-name
+                 program
                  nil
-                 (list shell-command-switch
-                       command))
+                 args)
       (term-char-mode)
       (if (ignore-errors (get-buffer-process buf))
           (set-process-sentinel (get-buffer-process buf)
