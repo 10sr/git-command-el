@@ -397,13 +397,20 @@ process."
            ))))))
 
 (eval-when-compile
-  (require 'term nil t))
+  (require 'term nil t)
+  (require 'term-run nil t))
 (defun git-command-term-run (program &optional buffer-or-name &rest args)
   "Run PROGRAM in terminal emulator.
 If BUFFER-OR-NAME is given, use this buffer.  In this case, old process in the
 buffer is destroyed.  Otherwise, new buffer is generated automatically from
 COMMAND.
-ARGS will be passed to PROGRAM."
+ARGS will be passed to PROGRAM.
+
+This function (`git-command-term-run') is deprecated and no more maintained:
+use `term-run' instead.
+This function is defined as a fallback if `term-run' is not available,"
+  (message "Using fallback function git-command-term-run.")
+  (message "Please install term-run package.")
   (let* ((name program)
          (buf (if buffer-or-name
                   (get-buffer-create buffer-or-name)
@@ -444,6 +451,9 @@ ARGS will be passed to PROGRAM."
                                     (goto-char (point-max)))))
         ;; (goto-char (point-max))
         ))))
+
+(unless (fboundp 'term-run)
+  (fset 'term-run 'git-command-term-run))
 
 (provide 'git-command)
 
