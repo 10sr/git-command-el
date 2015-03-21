@@ -41,6 +41,14 @@
 
 ;;; Code:
 
+(eval-and-compile
+  (require 'term)
+  (require 'term-run nil t)
+  (require 'server nil t)
+  (require 'ansi-color nil t)
+  )
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Variables
 
@@ -276,9 +284,6 @@ The value nil is equivalent to 0."
 
 ;; emacs client
 
-(eval-when-compile
-  (require 'server nil t))
-
 (defun git-command--construct-emacsclient-command ()
   "Construct and return command in a string to connect to current Emacs server."
   (if server-use-tcp
@@ -294,9 +299,6 @@ The value nil is equivalent to 0."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; user commands
-
-(eval-when-compile
-  (require 'ansi-color nil t))
 
 (defun git-command (cmd &optional new-buffer-p)
   "Shell like git command interface.  CMD is the commandline strings to run.
@@ -392,9 +394,6 @@ process."
                     args))
            ))))))
 
-(eval-when-compile
-  (require 'term nil t)
-  (require 'term-run nil t))
 (defun git-command-term-run (program &optional buffer-or-name &rest args)
   "Run PROGRAM in terminal emulator.
 If BUFFER-OR-NAME is given, use this buffer.  In this case, old process in the
