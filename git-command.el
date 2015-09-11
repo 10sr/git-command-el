@@ -83,8 +83,10 @@
   '(("diff" . (lambda (options cmd args new-buffer-p)
                 (let ((buf (if new-buffer-p
                                (generate-new-buffer "*git diff*")
-                             (get-buffer-create "*git diff*"))))
+                             (get-buffer-create "*git diff*")))
+                      (dir default-directory))
                   (with-current-buffer buf
+                    (cd dir)
                     (erase-buffer)
                     (shell-command (concat "git "
                                            (git-command-construct-commandline
