@@ -1,9 +1,9 @@
 ;;; git-command.el --- Dead simple git command interface
 
-;; Author: 10sr <>
-;; URL: https://github.com/10sr/git-command.el
+;; Author: 10sr <8slashes+el [at] gmail [dot] com>
+;; URL: https://github.com/10sr/git-command-el
 ;; Version: 0.1
-;; Package-Requires: ()
+;; Package-Requires: ((term-run "20150601.6") (with-editor "20151126.323"))
 ;; Keywords: utility git
 
 ;; This file is not part of GNU Emacs.
@@ -375,12 +375,7 @@ process."
              (require 'server nil t)
              (not (server-running-p))
              (server-start))
-        (let ((process-environment
-               (if git-command-use-emacsclient
-                   `(,(concat "GIT_EDITOR="
-                              (git-command--construct-emacsclient-command))
-                     ,@process-environment)
-                 process-environment)))
+        (with-editor
           (term-run
            shell-file-name
            (if new-buffer-p
