@@ -3,7 +3,7 @@
 ;; Author: 10sr <8slashes+el [at] gmail [dot] com>
 ;; URL: https://github.com/10sr/git-command-el
 ;; Version: 0.1
-;; Package-Requires: ((term-run "20150601.6") (with-editor "20151126.323") (ansi-color "0"))
+;; Package-Requires: ((term-run "20150601.6") (with-editor "20151126.323") (ansi-color "0") (shell-split-string "20150202.2036"))
 ;; Keywords: utility git
 
 ;; This file is not part of GNU Emacs.
@@ -46,6 +46,7 @@
   (require 'term-run)
   (require 'ansi-color)
   (require 'with-editor)
+  (require 'shell-split-string)
   )
 
 
@@ -200,17 +201,8 @@ About these arguments see document of `git-command-parse-commandline'."
 (defun git-command-parse-commandline (str)
   "Parse commandline string STR into a list like (OPTIONS COMMAND ARGUMENT)."
   (git-command-part-commands-with-subcommand
-   (git-command-shell-split-string
+   (shell-split-string
     str)))
-
-(defun git-command-shell-split-string (str)
-  "Split string STR into strings by shell."
-  (let ((emacs-bin (concat invocation-directory
-                           invocation-name)))
-    (cdr (read (shell-command-to-string (concat emacs-bin
-                                                " -Q --batch --eval '(prin1 command-line-args-left)' -- "
-                                                str
-                                                " 2>/dev/null"))))))
 
 (defun git-command-part-commands-with-subcommand (l)
   "Partition git args list L into (OPTIONS COMMAND ARGUMENTS) and return it.
