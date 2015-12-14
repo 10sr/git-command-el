@@ -3,7 +3,7 @@
 ;; Author: 10sr <8slashes+el [at] gmail [dot] com>
 ;; URL: https://github.com/10sr/git-command-el
 ;; Version: 0.1
-;; Package-Requires: ((term-run "20150601.6") (with-editor "20151126.323"))
+;; Package-Requires: ((term-run "20150601.6") (with-editor "20151126.323") (ansi-color "0"))
 ;; Keywords: utility git
 
 ;; This file is not part of GNU Emacs.
@@ -43,9 +43,9 @@
 
 (eval-and-compile
   (require 'term)
-  (require 'term-run nil t)
-  (require 'server nil t)
-  (require 'ansi-color nil t)
+  (require 'term-run)
+  (require 'ansi-color)
+  (require 'with-editor)
   )
 
 
