@@ -375,7 +375,7 @@ process."
              (require 'server nil t)
              (not (server-running-p))
              (server-start))
-        (with-editor
+        (with-editor "GIT_EDITOR"
           (term-run
            shell-file-name
            (if new-buffer-p
