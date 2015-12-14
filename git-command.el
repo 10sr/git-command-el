@@ -136,13 +136,6 @@ The function should get three argument: see `git-command-exec'.")
       ))
 
 
-(defvar git-command-use-emacsclient
-  nil
-  "If non-nil use emacsclient for editor of git.
-In this case, `server-start' will be called at the first call of `git-command'
-if Emacs server is not running.")
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; utility
 
@@ -284,21 +277,6 @@ The value nil is equivalent to 0."
       i)))
 
 
-;; emacs client
-
-(defun git-command--construct-emacsclient-command ()
-  "Construct and return command in a string to connect to current Emacs server."
-  (if server-use-tcp
-      (format "%s -f \"%s/%s\""
-              "emacsclient"
-              (expand-file-name server-auth-dir)
-              server-name)
-    (format "%s -s \"%s/%s\""
-            "emacsclient"
-            server-socket-dir
-            server-name)))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; user commands
 
@@ -371,10 +349,6 @@ process."
                 (fundamental-mode)
                 (view-mode))))
         ;; if this command is not a view command
-        (and git-command-use-emacsclient
-             (require 'server nil t)
-             (not (server-running-p))
-             (server-start))
         (with-editor "GIT_EDITOR"
           (term-run
            shell-file-name
