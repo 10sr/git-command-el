@@ -391,62 +391,6 @@ process."
                     args))
            ))))))
 
-(defun git-command-term-run (program &optional buffer-or-name &rest args)
-  "Run PROGRAM in terminal emulator.
-If BUFFER-OR-NAME is given, use this buffer.  In this case, old process in the
-buffer is destroyed.  Otherwise, new buffer is generated automatically from
-COMMAND.
-ARGS will be passed to PROGRAM.
-
-This function (`git-command-term-run') is deprecated and no more maintained:
-use `term-run' instead.
-This function is defined as a fallback if `term-run' is not available,"
-  (message "Using fallback function git-command-term-run.")
-  (message "Please install term-run package.")
-  (let* ((name program)
-         (buf (if buffer-or-name
-                  (get-buffer-create buffer-or-name)
-                (generate-new-buffer (concat "*"
-                                             name
-                                             "*"))))
-         (proc (get-buffer-process buf))
-         (dir default-directory))
-    (and proc
-         (delete-process proc))
-    (display-buffer buf)
-    (with-current-buffer buf
-      (cd dir)
-      (set (make-local-variable 'term-scroll-to-bottom-on-output)
-           t)
-      (let ((inhibit-read-only t))
-        (goto-char (point-max))
-        (insert "\n")
-        (insert "Start executing "
-                program)
-        (add-text-properties (point-at-bol)
-                             (point-at-eol)
-                             '(face bold))
-        (insert "\n\n"))
-      (require 'term)
-      (term-mode)
-      (term-exec buf
-                 (concat "term-" name)
-                 program
-                 nil
-                 args)
-      (term-char-mode)
-      (if (ignore-errors (get-buffer-process buf))
-          (set-process-sentinel (get-buffer-process buf)
-                                (lambda (proc change)
-                                  (with-current-buffer (process-buffer proc)
-                                    (term-sentinel proc change)
-                                    (goto-char (point-max)))))
-        ;; (goto-char (point-max))
-        ))))
-
-(unless (fboundp 'term-run)
-  (fset 'term-run 'git-command-term-run))
-
 (provide 'git-command)
 
 ;;; git-command.el ends here
