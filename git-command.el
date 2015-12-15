@@ -53,12 +53,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Variables
 
+;; TODO: remove?
 (defvar git-command-default-options
   nil
   "List of options always passed to git.")
 
+;; TODO: use defcustom properly
+(defvar git-command-default-command
+  "git -c color.ui=always "
+  "Default value for `git-command' interactive execution.")
+
 
 ;; variables for __git_ps1
+;; TODO: use getenv
 (defvar git-command-ps1-showdirtystate "t"
   "Value of  GIT_PS1_SHOWDIRTYSTATE when running __git_ps1.")
 
@@ -75,11 +82,39 @@
 (defvar git-command-history nil
   "History list for `git-command'.")
 
+(defvar git-comand--pager-output-timer nil
+  "Timer object to open buffer to show pager output.")
+
 
 (defvar git-command-view-command-list
   '("log" "show" "help")
   "List of commands that will only output something for read.")
 
+;; TODO: maybe I do not need this by GIT_PAGER=cat >a.txt
+(defvar git-command-output-handler-alist
+  '(
+    ("diff" . (lambda (output new-buffer-p)
+                (let ((buf (if new-buffer-p
+                               (generate-new-buffer "*git diff*")
+                             (get-buffer-create "*git diff*")))
+                      (dir default-directory))
+                  (with-current-buffer buf
+                    (cd dir)
+                    (erase-buffer)
+                    (insert (substring-no-properties output))
+                    (diff-mode))
+                  (display-buffer buf)
+                  buf)))
+    )
+  "Alist of git subcommand its output handler.
+
+Each element should be like (COMMAND . FUNCTION).
+COMMAND should be a string of git subcommand like \"diff\", and FUNCTION should
+be a function that will be called with two argument: the first one is a output
+string of the git command with text properties, and second is NEW-BUFFER-P
+flag.  This function should return the buffer which is displaying the output.")
+
+;; TODO: remove
 (defvar git-command-aliases-alist
   '(("diff" . (lambda (options cmd args new-buffer-p)
                 (let ((buf (if new-buffer-p
@@ -182,56 +217,63 @@ The function should get three argument: see `git-command-exec'.")
                                           (point-max)))
       "")))
 
-(defun git-command-get-alias-function (cmd)
-  "Return alias function for CMD if available in `git-command-alias-alist'."
+(defun git-command-get-output-handler (cmd)
+  "Return alias function for CMD if available in `git-command-alias-alist'.
+CMD should be a string of git subcommand."
   (cdr (assoc cmd
-              git-command-aliases-alist)))
+              git-command-output-handler-alist)))
 
-;; commandline parsing
-(defun git-command-construct-commandline (options command args)
-  "Construct one commandline string from OPTIONS COMMAND and ARGS.
-TODO: how to do about `git-command-default-options'?
-The string returned does not start with \"git\" so this should be concat-ed.
 
-About these arguments see document of `git-command-parse-commandline'."
-  (mapconcat 'shell-quote-argument
-             `(,@options ,command ,@args)
-             " "))
+(defvar git-command--with-git-pager-executable
+  (expand-file-name (concat user-emacs-directory "git-command/pager.sh"))
+  "File path to executable for `git-command-with-git-pager'.")
 
-(defun git-command-parse-commandline (str)
-  "Parse commandline string STR into a list like (OPTIONS COMMAND ARGUMENT)."
-  (git-command-part-commands-with-subcommand
-   (shell-split-string
-    str)))
+;; Remove this file on reloading this library in case of updating.
+(when (file-readable-p git-command--with-git-pager-executable)
+  (delete-file git-command--with-git-pager-executable))
 
-(defun git-command-part-commands-with-subcommand (l)
-  "Partition git args list L into (OPTIONS COMMAND ARGUMENTS) and return it.
-Only COMMAND is string, others are lists.
-OPTIONS is distinguished by if they start with hyphens.
-\"-c\" option is a special case which takes one parameter."
-  (let ((i (git-command-find-subcommand l)))
-    ;; make list that contains from 0th to ith element
-    (list
-     ;; OPTIONS
-     (if (eq 0
-             i)
-         nil
-       (let ((ol (copy-sequence l)))
-         (setcdr (nthcdr (- i 1)
-                         ol)
-                 nil)
-         ol))
-     ;; COMMAND
-     (or (nth i
-              l)
-         "")
-     ;; ARGUMENTS
-     (nthcdr (1+ i)
-             l)
-     )))
 
-(defun git-command-find-subcommand (l &optional index)
-  "Find subcommand from list L and return the index number.
+(defconst git-command--with-git-pager-executable-content
+  "#!/bin/sh
+
+tmp=`mktemp --tmpdir tmp.XXXXXX`
+cat >\"$tmp\"
+sh -s <<__EOF__
+$GIT_EDITOR \
+  --eval \"(display-buffer (with-current-buffer (generate-new-buffer \\\"\*git pager\*\\\") (insert-file-contents \\\"$tmp\\\") (require 'ansi-color) (ansi-color-apply-on-region (point-min) (point-max)) (current-buffer)))\"
+__EOF__
+rm -f \"$tmp\"
+"
+  "Script content for `git-command--with-git-pager-executable'.")
+
+
+(defmacro git-command-with-git-editor-git-pager (&rest body)
+  "Evaluate BODY with $GIT_EDITOR and $GIT_PAGER are set."
+  (declare (indent defun) (debug (body)))
+  `(with-editor "GIT_PAGER"
+     (let ((process-environment (cons (format "GIT_PAGER=%s"
+                                              git-command--with-git-pager-executable)
+                                      process-environment)))
+       (unless (file-readable-p git-command--with-git-pager-executable)
+         ;; Create executable for GIT_PAGER
+         (make-directory (file-name-directory git-command--with-git-pager-executable)
+                         t)
+         (with-temp-buffer
+           (insert git-command--with-git-pager-executable-content)
+           (write-region (point-min)
+                         (point-max)
+                         git-command--with-git-pager-executable))
+         (set-file-modes git-command--with-git-pager-executable
+                         #o755))
+
+       ,@body)))
+
+
+(defun git-command--find-subcommand (cmd)
+  "Find git subcommand from CMD.")
+
+(defun git-command--find-subcommand-index (l &optional index)
+  "Find subcommand index from list L and return the index number.
 Options that lead subcommand are distinguished by if they start with hyphens.
 \"-c\" option is a special case which take one parameter.
 If no subcommand was found, returns the length of L.
@@ -273,6 +315,32 @@ The value nil is equivalent to 0."
 ;; user commands
 
 (defun git-command (cmd &optional new-buffer-p)
+  "Shell like git command interface.
+
+CMD is the commandline string to run.
+If NEW-BUFFER-P is non-nil, generate new buffer for running command."
+  (interactive (list (read-shell-command (format "[%s]%s $ git : "
+                                                 (abbreviate-file-name
+                                                  default-directory)
+                                                 (git-command-ps1 "[GIT:%s]"))
+                                         git-command-default-command
+                                         'git-command-history)
+                     current-prefix-arg))
+  (let* ((pager-output-file (make-temp-file "git-command-pager-output"))
+         (process-environment `(,(format "GIT_PAGER=cat >\"%s\""
+                                         pager-output-file)
+                                ,@process-environment))
+         (process-buffer (if new-buffer-p
+                             (generate-new-buffer "*git command*")
+                           "*git command*")))
+    (git-command-with-git-editor-git-pager
+      (term-run shell-file-name
+                process-buffer
+                shell-command-switch
+                cmd))
+    process-buffer))
+
+(defun -git-command (cmd &optional new-buffer-p)
   "Shell like git command interface.  CMD is the commandline strings to run.
 
 If NEW-BUFFER-P is non-nil, generate new buffer for running command."
@@ -286,7 +354,7 @@ If NEW-BUFFER-P is non-nil, generate new buffer for running command."
   (apply 'git-command-exec (append (git-command-parse-commandline cmd)
                                    (list new-buffer-p))))
 
-(defun git-command-exec (options command args &optional new-buffer-p)
+(defun -git-command-exec (options command args &optional new-buffer-p)
   "Execute git.
 
 This function accept three arguments.  OPTIONS is a list of options that will be
