@@ -61,16 +61,20 @@
 
 ;; variables for __git_ps1
 ;; TODO: use getenv
-(defvar git-command-ps1-showdirtystate "t"
+(defvar git-command-ps1-showdirtystate
+  (getenv "GIT_PS1_SHOWDIRTYSTATE")
   "Value of  GIT_PS1_SHOWDIRTYSTATE when running __git_ps1.")
 
-(defvar git-command-ps1-showstashstate ""
+(defvar git-command-ps1-showstashstate
+  (getenv "GIT_PS1_SHOWSTASHSTATE")
   "Value of GIT_PS1_SHOWSTASHSTATE when running __git_ps1.")
 
-(defvar git-command-ps1-showuntrackedfiles ""
+(defvar git-command-ps1-showuntrackedfiles
+  (getenv "GIT_PS1_SHOWUNTRACKEDFILES")
   "Value of GIT_PS1_SHOWUNTRACKEDFILES when running __git_ps1.")
 
-(defvar git-command-ps1-showupstream "auto"
+(defvar git-command-ps1-showupstream
+  (getenv "GIT_PS1_SHOWUPSTREAM")
   "Value of GIT_PS1_SHOWUPSTREAM when running __git_ps1.")
 
 
@@ -123,13 +127,17 @@
   "Generate git ps1 string from FMT and return that string."
   (let ((gcmpl (or git-command-prompt-file))
         (process-environment `(,(concat "GIT_PS1_SHOWDIRTYSTATE="
-                                        git-command-ps1-showdirtystate)
+                                        (or git-command-ps1-showdirtystate
+                                            ""))
                                ,(concat "GIT_PS1_SHOWSTASHSTATE="
-                                        git-command-ps1-showstashstate)
+                                        (or git-command-ps1-showstashstate
+                                            ""))
                                ,(concat "GIT_PS1_SHOWUNTRACKEDFILES="
-                                        git-command-ps1-showuntrackedfiles)
+                                        (or git-command-ps1-showuntrackedfiles
+                                            ""))
                                ,(concat "GIT_PS1_SHOWUPSTREAM="
-                                        git-command-ps1-showupstream)
+                                        (or git-command-ps1-showupstream
+                                            ""))
                                ,@process-environment)))
     (if (and (executable-find "bash")
              gcmpl
