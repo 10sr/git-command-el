@@ -15,7 +15,7 @@ test: build info
 build: $(elc)
 
 $(elc): %.elc: %.el
-	$(emacs) -batch -Q -f batch-byte-compile $<
+	$(emacs) -batch -Q -L mocks -f batch-byte-compile $<
 
 
 elisp_get_file_package_info := \
