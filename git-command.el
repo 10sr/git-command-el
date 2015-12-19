@@ -173,11 +173,29 @@ tmp=`mktemp --tmpdir tmp.XXXXXX`
 cat >\"$tmp\"
 sh -s <<__EOF__
 $GIT_EDITOR \
-  --eval \"(display-buffer (with-current-buffer (generate-new-buffer \\\"\*git pager\*\\\") (insert-file-contents \\\"$tmp\\\") (require 'ansi-color) (ansi-color-apply-on-region (point-min) (point-max)) (current-buffer)))\"
+  --eval \"(git-command--with-pager-internal \\\"$tmp\\\")\"
 __EOF__
 rm -f \"$tmp\"
 "
   "Script content for `git-command--with-git-pager-executable'.")
+
+
+;; TODO: use defcustom
+(defvar git-command-pager-buffer-create-new nil
+  "Non-nil to create new buffer for each GIT_PAGER invocation.")
+
+(defun git-command--with-pager-internal (filename)
+  "Insert contents of FILENAME in a buffer and popup with `display-buffer'."
+  (let ((buf (if git-command-pager-buffer-create-new
+                  (generate-new-buffer "*git pager*")
+                (when (get-buffer "*git pager*")
+                  (kill-buffer "*git pager*"))
+                (get-buffer-create "*git pager*"))))
+    (with-current-buffer buf
+      (insert-file-contents filename)
+      (ansi-color-apply-on-region (point-min)
+                                  (point-max)))
+    (display-buffer buf)))
 
 
 (defmacro git-command-with-git-editor-git-pager (&rest body)
