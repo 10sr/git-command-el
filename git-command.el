@@ -45,6 +45,7 @@
 (require 'term-run)
 (require 'ansi-color)
 (require 'with-editor)
+(require 'git-ps1-mode)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
