@@ -243,7 +243,7 @@ This variable is used internally only.")
 
 CMD is the commandline string to run.
 If NEW-BUFFER-P is non-nil, generate new buffer for running command."
-  (interactive (list (read-shell-command (format "[%s]%s $ git : "
+  (interactive (list (read-shell-command (format "[%s]%s $ "
                                                  (abbreviate-file-name
                                                   default-directory)
                                                  (git-command-ps1 "[GIT:%s]"))
