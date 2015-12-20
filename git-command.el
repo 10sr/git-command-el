@@ -115,10 +115,10 @@ rm -f \"$tmp\"
   "Script content for `git-command--with-git-pager-executable'.")
 
 
-(defcustom git-command-pager-buffer-create-new nil
-  "Non-nil to create new buffer for each GIT_PAGER invocation."
-  :group 'git-command
-  :type 'boolean)
+(defvar git-command--pager-buffer-create-new nil
+  "Non-nil to create new buffer for each GIT_PAGER invocation.
+
+This variable is used internally only.")
 
 
 
@@ -200,7 +200,7 @@ rm -f \"$tmp\"
 
 (defun git-command--with-pager-display-contents (filename)
   "Insert contents of FILENAME in a buffer and popup with `display-buffer'."
-  (let ((buf (if git-command-pager-buffer-create-new
+  (let ((buf (if git-command--pager-buffer-create-new
                   (generate-new-buffer "*git pager*")
                 (when (get-buffer "*git pager*")
                   (kill-buffer "*git pager*"))
@@ -250,6 +250,8 @@ If NEW-BUFFER-P is non-nil, generate new buffer for running command."
                                          git-command-default-command
                                          'git-command-history)
                      current-prefix-arg))
+  (setq git-command--pager-buffer-create-new
+        new-buffer-p)
   (git-command-with-git-editor-git-pager
     (term-run shell-file-name
               (if new-buffer-p
