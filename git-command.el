@@ -108,7 +108,7 @@ tmp=`mktemp --tmpdir tmp.XXXXXX`
 cat >\"$tmp\"
 sh -s <<__EOF__
 $GIT_EDITOR \
-  --eval \"(git-command--with-pager-internal \\\"$tmp\\\")\"
+  --eval \"(git-command--with-pager-display-contents \\\"$tmp\\\")\"
 __EOF__
 rm -f \"$tmp\"
 "
@@ -198,7 +198,7 @@ rm -f \"$tmp\"
 
 
 
-(defun git-command--with-pager-internal (filename)
+(defun git-command--with-pager-display-contents (filename)
   "Insert contents of FILENAME in a buffer and popup with `display-buffer'."
   (let ((buf (if git-command-pager-buffer-create-new
                   (generate-new-buffer "*git pager*")
