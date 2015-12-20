@@ -250,19 +250,13 @@ If NEW-BUFFER-P is non-nil, generate new buffer for running command."
                                          git-command-default-command
                                          'git-command-history)
                      current-prefix-arg))
-  (let* ((pager-output-file (make-temp-file "git-command-pager-output"))
-         (process-environment `(,(format "GIT_PAGER=cat >\"%s\""
-                                         pager-output-file)
-                                ,@process-environment))
-         (process-buffer (if new-buffer-p
-                             (generate-new-buffer "*git command*")
-                           "*git command*")))
-    (git-command-with-git-editor-git-pager
-      (term-run shell-file-name
-                process-buffer
-                shell-command-switch
-                cmd))
-    process-buffer))
+  (git-command-with-git-editor-git-pager
+    (term-run shell-file-name
+              (if new-buffer-p
+                  (generate-new-buffer "*git command*")
+                "*git command*")
+              shell-command-switch
+              cmd)))
 
 (provide 'git-command)
 
