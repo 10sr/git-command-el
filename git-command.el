@@ -51,33 +51,75 @@
 ;; Variables
 
 
-;; TODO: use defcustom properly
-(defvar git-command-default-command
+(defgroup git-command nil
+  "Dead simple git command interface."
+  :group 'tools)
+
+(defcustom git-command-default-command
   "git -c color.ui=always "
-  "Default value for `git-command' interactive execution.")
+  "Default value for `git-command' interactive execution."
+  :group 'git-command
+  :type 'string)
 
 
 ;; variables for __git_ps1
 ;; TODO: use getenv
-(defvar git-command-ps1-showdirtystate
+(defcustom git-command-ps1-showdirtystate
   (getenv "GIT_PS1_SHOWDIRTYSTATE")
-  "Value of  GIT_PS1_SHOWDIRTYSTATE when running __git_ps1.")
+  "Value of  GIT_PS1_SHOWDIRTYSTATE when running __git_ps1."
+  :group 'git-command
+  :type 'string)
 
-(defvar git-command-ps1-showstashstate
+(defcustom git-command-ps1-showstashstate
   (getenv "GIT_PS1_SHOWSTASHSTATE")
-  "Value of GIT_PS1_SHOWSTASHSTATE when running __git_ps1.")
+  "Value of GIT_PS1_SHOWSTASHSTATE when running __git_ps1."
+  :group 'git-command
+  :type 'string)
 
-(defvar git-command-ps1-showuntrackedfiles
+(defcustom git-command-ps1-showuntrackedfiles
   (getenv "GIT_PS1_SHOWUNTRACKEDFILES")
-  "Value of GIT_PS1_SHOWUNTRACKEDFILES when running __git_ps1.")
+  "Value of GIT_PS1_SHOWUNTRACKEDFILES when running __git_ps1."
+  :group 'git-command
+  :type 'string)
 
-(defvar git-command-ps1-showupstream
+(defcustom  git-command-ps1-showupstream
   (getenv "GIT_PS1_SHOWUPSTREAM")
-  "Value of GIT_PS1_SHOWUPSTREAM when running __git_ps1.")
+  "Value of GIT_PS1_SHOWUPSTREAM when running __git_ps1."
+  :group 'git-command
+  :type 'string)
 
 
 (defvar git-command-history nil
   "History list for `git-command'.")
+
+
+(defconst git-command--with-git-pager-executable
+  (expand-file-name (concat user-emacs-directory "git-command/pager.sh"))
+  "File path to executable for `git-command-with-git-pager'.")
+;; Remove this file on reloading this library in case of updating.
+(when (file-readable-p git-command--with-git-pager-executable)
+  (delete-file git-command--with-git-pager-executable))
+
+
+(defconst git-command--with-git-pager-executable-content
+  "#!/bin/sh
+
+tmp=`mktemp --tmpdir tmp.XXXXXX`
+cat >\"$tmp\"
+sh -s <<__EOF__
+$GIT_EDITOR \
+  --eval \"(git-command--with-pager-internal \\\"$tmp\\\")\"
+__EOF__
+rm -f \"$tmp\"
+"
+  "Script content for `git-command--with-git-pager-executable'.")
+
+
+(defcustom git-command-pager-buffer-create-new nil
+  "Non-nil to create new buffer for each GIT_PAGER invocation."
+  :group 'git-command
+  :type 'boolean)
+
 
 
 (defun git-command-find-git-ps1 (f)
@@ -155,32 +197,6 @@
       "")))
 
 
-(defvar git-command--with-git-pager-executable
-  (expand-file-name (concat user-emacs-directory "git-command/pager.sh"))
-  "File path to executable for `git-command-with-git-pager'.")
-
-;; Remove this file on reloading this library in case of updating.
-(when (file-readable-p git-command--with-git-pager-executable)
-  (delete-file git-command--with-git-pager-executable))
-
-
-(defconst git-command--with-git-pager-executable-content
-  "#!/bin/sh
-
-tmp=`mktemp --tmpdir tmp.XXXXXX`
-cat >\"$tmp\"
-sh -s <<__EOF__
-$GIT_EDITOR \
-  --eval \"(git-command--with-pager-internal \\\"$tmp\\\")\"
-__EOF__
-rm -f \"$tmp\"
-"
-  "Script content for `git-command--with-git-pager-executable'.")
-
-
-;; TODO: use defcustom
-(defvar git-command-pager-buffer-create-new nil
-  "Non-nil to create new buffer for each GIT_PAGER invocation.")
 
 (defun git-command--with-pager-internal (filename)
   "Insert contents of FILENAME in a buffer and popup with `display-buffer'."
