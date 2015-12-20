@@ -56,7 +56,7 @@
   :group 'tools)
 
 (defcustom git-command-default-command
-  "git -c color.ui=always "
+  "git "
   "Default value for `git-command' interactive execution."
   :group 'git-command
   :type 'string)
