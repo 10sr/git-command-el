@@ -41,12 +41,10 @@
 
 ;;; Code:
 
-(eval-and-compile
-  (require 'term)
-  (require 'term-run)
-  (require 'ansi-color)
-  (require 'with-editor)
-  )
+(require 'term)
+(require 'term-run)
+(require 'ansi-color)
+(require 'with-editor)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
