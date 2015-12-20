@@ -3,7 +3,7 @@
 ;; Author: 10sr <8slashes+el [at] gmail [dot] com>
 ;; URL: https://github.com/10sr/git-command-el
 ;; Version: 0.1
-;; Package-Requires: ((term-run "20150601.6") (with-editor "20151126.323") (ansi-color "0"))
+;; Package-Requires: ((term-run "20150601.6") (with-editor "20151126.323") (git-ps1-mode "20151220.415") (ansi-color "0"))
 ;; Keywords: utility git
 
 ;; This file is not part of GNU Emacs.
@@ -62,33 +62,6 @@
   :type 'string)
 
 
-;; variables for __git_ps1
-;; TODO: use getenv
-(defcustom git-command-ps1-showdirtystate
-  (getenv "GIT_PS1_SHOWDIRTYSTATE")
-  "Value of  GIT_PS1_SHOWDIRTYSTATE when running __git_ps1."
-  :group 'git-command
-  :type 'string)
-
-(defcustom git-command-ps1-showstashstate
-  (getenv "GIT_PS1_SHOWSTASHSTATE")
-  "Value of GIT_PS1_SHOWSTASHSTATE when running __git_ps1."
-  :group 'git-command
-  :type 'string)
-
-(defcustom git-command-ps1-showuntrackedfiles
-  (getenv "GIT_PS1_SHOWUNTRACKEDFILES")
-  "Value of GIT_PS1_SHOWUNTRACKEDFILES when running __git_ps1."
-  :group 'git-command
-  :type 'string)
-
-(defcustom  git-command-ps1-showupstream
-  (getenv "GIT_PS1_SHOWUPSTREAM")
-  "Value of GIT_PS1_SHOWUPSTREAM when running __git_ps1."
-  :group 'git-command
-  :type 'string)
-
-
 (defvar git-command-history nil
   "History list for `git-command'.")
 
@@ -121,81 +94,8 @@ rm -f \"$tmp\"
 This variable is used internally only.")
 
 
-
-(defun git-command-find-git-ps1 (f)
-  "Return F if F exists and it contain function \"__git_ps1\"."
-  (and (file-readable-p f)
-       (with-temp-buffer
-         (insert ". " f "; "
-                 "__git_ps1 %s;")
-         (eq 0 (shell-command-on-region (point-min)
-                                        (point-max)
-                                        "bash -s"
-                                        nil
-                                        t)))
-       f))
-
-(defvar git-command-prompt-file
-  (or (git-command-find-git-ps1 "/usr/share/git/completion/git-prompt.sh")
-      (git-command-find-git-ps1
-       "/opt/local/share/doc/git-core/contrib/completion/git-prompt.sh")
-      (git-command-find-git-ps1 "/etc/bash_completion.d/git")
-      (git-command-find-git-ps1 "/etc/bash_completion.d/git-prompt")
-      (git-command-find-git-ps1
-       "/opt/local/share/git-core/git-prompt.sh")
-      (git-command-find-git-ps1 "/opt/local/etc/bash_completion.d/git")
-      ))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; utility
-
-(defun git-command--git-dir ()
-  "Execute \"git rev-parse --git-dir\" and return result string or nil."
-  (with-temp-buffer
-    (and (eq 0
-             (call-process "git"
-                           nil
-                           t
-                           nil
-                           "rev-parse" "--git-dir"))
-         (progn (goto-char (point-min))
-                (buffer-substring-no-properties (point-at-bol)
-                                                (point-at-eol))))))
-
-(defun git-command-ps1 (fmt)
-  "Generate git ps1 string from FMT and return that string."
-  (let ((gcmpl (or git-command-prompt-file))
-        (process-environment `(,(concat "GIT_PS1_SHOWDIRTYSTATE="
-                                        (or git-command-ps1-showdirtystate
-                                            ""))
-                               ,(concat "GIT_PS1_SHOWSTASHSTATE="
-                                        (or git-command-ps1-showstashstate
-                                            ""))
-                               ,(concat "GIT_PS1_SHOWUNTRACKEDFILES="
-                                        (or git-command-ps1-showuntrackedfiles
-                                            ""))
-                               ,(concat "GIT_PS1_SHOWUPSTREAM="
-                                        (or git-command-ps1-showupstream
-                                            ""))
-                               ,@process-environment)))
-    (if (and (executable-find "bash")
-             gcmpl
-             (file-readable-p gcmpl))
-        (with-temp-buffer
-          (insert ". " gcmpl
-                  "; __git_ps1 "
-                  (shell-quote-argument fmt)
-                  ";")
-          (shell-command-on-region (point-min)
-                                   (point-max)
-                                   "bash -s"
-                                   nil
-                                   t)
-          (buffer-substring-no-properties (point-min)
-                                          (point-max)))
-      "")))
-
+;; pager
 
 
 (defun git-command--with-pager-display-contents (filename)
@@ -246,7 +146,7 @@ If NEW-BUFFER-P is non-nil, generate new buffer for running command."
   (interactive (list (read-shell-command (format "[%s]%s $ "
                                                  (abbreviate-file-name
                                                   default-directory)
-                                                 (git-command-ps1 "[GIT:%s]"))
+                                                 (git-ps1-mode-get-current "[GIT:%s]"))
                                          git-command-default-command
                                          'git-command-history)
                      current-prefix-arg))
