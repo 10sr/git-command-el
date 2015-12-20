@@ -237,6 +237,7 @@ rm -f \"$tmp\"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; user commands
 
+;;;###autoload
 (defun git-command (cmd &optional new-buffer-p)
   "Shell like git command interface.
 
