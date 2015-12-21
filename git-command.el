@@ -77,8 +77,9 @@
 
 (defconst git-command--with-git-pager-executable-content
   "#!/bin/sh
+set -e
 
-tmp=`mktemp --tmpdir tmp.XXXXXX`
+tmp=`mktemp ._git-command-with-git-pager-temporary.XXXXXX`
 cat >\"$tmp\"
 sh -s <<__EOF__
 $GIT_EDITOR \
