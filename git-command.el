@@ -1,4 +1,4 @@
-;;; git-command.el --- Dead simple git command interface
+;;; git-command.el --- Dead Simple Git Interface
 
 ;; Author: 10sr <8slashes+el [at] gmail [dot] com>
 ;; URL: https://github.com/10sr/git-command-el
@@ -35,9 +35,16 @@
 
 ;;; Commentary:
 
-;; Dead simple git interface.  No major-mode, only provides command-line like
-;; interface using minibuffer.  You need not remember additional keybinds for
-;; using git from Emacs.
+;; This packgage provides a way to invoke Git with command-line interface using
+;; minibuffer. While runnning git command, $GIT_EDITOR and $GIT_PAGER are set
+;; nicely so you can use emacsclient to open files and get outputs.
+
+
+;; Completion
+
+;; It is highly recommended to Install `pcmpl-git` with this package to enable
+;; completion when entering git command interactively.
+
 
 ;;; Code:
 
@@ -141,10 +148,13 @@ This variable is used internally only.")
 
 ;;;###autoload
 (defun git-command (cmd &optional new-buffer-p)
-  "Shell like git command interface.
+  "Invoke git shell command.
+While running git command, $GIT_EDITOR and $GIT_PAGER are set to use emacsclient
+to open files and get outputs.
 
-CMD is the commandline string to run.
-If NEW-BUFFER-P is non-nil, generate new buffer for running command."
+CMD is command line string to run.
+If NEW-BUFFER-P is non-nil, generate new buffer for running command.
+Interactively, give prefix argument for new buffer."
   (interactive (list (read-shell-command (format "[%s]%s $ "
                                                  (abbreviate-file-name
                                                   default-directory)
