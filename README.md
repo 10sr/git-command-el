@@ -17,7 +17,7 @@ can use emacsclient to open files and get outputs.
 Usage
 -----
 
-This package provide only one user command:
+This package provides only one user command:
 
     M-x git-command
 
@@ -39,4 +39,4 @@ That enables completion when entering git command interactively.
 License
 --------
 
-This software is unlicensed.
+This software is unlicensed. For details, see `LICENSE`.
