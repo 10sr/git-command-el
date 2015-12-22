@@ -124,7 +124,7 @@ This variable is used internally only.")
 (defmacro git-command-with-git-editor-git-pager (&rest body)
   "Evaluate BODY with $GIT_EDITOR and $GIT_PAGER are set."
   (declare (indent defun) (debug (body)))
-  `(with-editor "GIT_PAGER"
+  `(with-editor "GIT_EDITOR"
      (let ((process-environment (cons (format "GIT_PAGER=%s"
                                               git-command--with-git-pager-executable)
                                       process-environment)))
