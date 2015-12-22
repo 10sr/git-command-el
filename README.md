@@ -8,7 +8,7 @@ git-command.el
 
 Dead simple git interface.
 
-This packgage provides a way to invoke Git with command-line interface using
+This packgage provides a way to invoke Git from a command-line interface using
 minibuffer.
 While runnning git command, `$GIT_EDITOR` and `$GIT_PAGER` are set nicely so you
 can use emacsclient to open files and get outputs.

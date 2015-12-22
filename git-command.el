@@ -35,9 +35,9 @@
 
 ;;; Commentary:
 
-;; This packgage provides a way to invoke Git with command-line interface using
-;; minibuffer. While runnning git command, $GIT_EDITOR and $GIT_PAGER are set
-;; nicely so you can use emacsclient to open files and get outputs.
+;; This packgage provides a way to invoke Git from a command-line interface
+;; using minibuffer. While runnning git command, $GIT_EDITOR and $GIT_PAGER are
+;; set nicely so you can use emacsclient to open files and get outputs.
 
 
 ;; Completion
@@ -153,6 +153,8 @@ While running git command, $GIT_EDITOR and $GIT_PAGER are set to use emacsclient
 to open files and get outputs.
 
 CMD is command line string to run.
+Called interactively, asks users what command line to invoke.
+
 If NEW-BUFFER-P is non-nil, generate new buffer for running command.
 Interactively, give prefix argument for new buffer."
   (interactive (list (read-shell-command (format "[%s]%s $ "
