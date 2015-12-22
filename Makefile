@@ -2,37 +2,23 @@ emacs ?= emacs
 
 el = $(wildcard *.el)
 elc = $(el:%.el=%.elc)
+ert_test_el = $(wildcard test/*.el)
 
 all: $(elc)
 
-.PHONY: all test build info clean
+.PHONY: all test test-ert build clean
 
 clean:
 	$(RM) $(elc)
 
-test: build info
+test: build test-ert
 
 build: $(elc)
 
 $(elc): %.elc: %.el
-	$(emacs) -batch -Q -f batch-byte-compile $<
+	$(emacs) -batch -Q -L mocks -f batch-byte-compile $<
 
 
-elisp_get_file_package_info := \
-	(lambda (f) \
-		(with-temp-buffer \
-			(insert-file-contents-literally f) \
-			(package-buffer-info)))
-
-elisp_print_infos := \
-	(mapc \
-		(lambda (f) \
-			(message \"Loading info: %s\" f) \
-			(message \"%S\" (funcall $(elisp_get_file_package_info) f))) \
-		command-line-args-left)
-
-info: $(el)
-	$(emacs) -batch -Q \
-		--eval "(require 'package)" \
-		--eval "$(elisp_print_infos)" \
-		$^
+test-ert:
+	$(emacs) -batch -Q -L . --eval "(require 'ert)" $(ert_test_el:%=-l "%") \
+		-f ert-run-tests-batch-and-exit

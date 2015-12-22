@@ -1,9 +1,9 @@
-;;; git-command.el --- Dead simple git command interface
+;;; git-command.el --- Dead Simple Git Interface
 
-;; Author: 10sr <>
-;; URL: https://github.com/10sr/git-command.el
-;; Version: 0.1
-;; Package-Requires: ()
+;; Author: 10sr <8slashes+el [at] gmail [dot] com>
+;; URL: https://github.com/10sr/git-command-el
+;; Version: 0.2.0
+;; Package-Requires: ((term-run "20150601.6") (with-editor "20151126.323") (git-ps1-mode "20151220.415") (ansi-color "0"))
 ;; Keywords: utility git
 
 ;; This file is not part of GNU Emacs.
@@ -35,422 +35,144 @@
 
 ;;; Commentary:
 
-;; Dead simple git interface.  No major-mode, only provides command-line like
-;; interface using minibuffer.  You need not remember additional keybinds for
-;; using git from Emacs.
+;; This packgage provides a way to invoke Git from a command-line interface
+;; using minibuffer. While runnning git command, $GIT_EDITOR and $GIT_PAGER are
+;; set nicely so you can use emacsclient to open files and get outputs.
+
+
+;; Completion
+
+;; It is highly recommended to Install `pcmpl-git` with this package to enable
+;; completion when entering git command interactively.
+
 
 ;;; Code:
 
-(eval-and-compile
-  (require 'term)
-  (require 'term-run nil t)
-  (require 'server nil t)
-  (require 'ansi-color nil t)
-  )
+(require 'term)
+(require 'term-run)
+(require 'ansi-color)
+(require 'with-editor)
+(require 'git-ps1-mode)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Variables
 
-(defvar git-command-default-options
-  nil
-  "List of options always passed to git.")
 
+(defgroup git-command nil
+  "Dead simple git command interface."
+  :group 'tools)
 
-;; variables for __git_ps1
-(defvar git-command-ps1-showdirtystate "t"
-  "Value of  GIT_PS1_SHOWDIRTYSTATE when running __git_ps1.")
-
-(defvar git-command-ps1-showstashstate ""
-  "Value of GIT_PS1_SHOWSTASHSTATE when running __git_ps1.")
-
-(defvar git-command-ps1-showuntrackedfiles ""
-  "Value of GIT_PS1_SHOWUNTRACKEDFILES when running __git_ps1.")
-
-(defvar git-command-ps1-showupstream "auto"
-  "Value of GIT_PS1_SHOWUPSTREAM when running __git_ps1.")
+(defcustom git-command-default-command
+  "git "
+  "Default value for `git-command' interactive execution."
+  :group 'git-command
+  :type 'string)
 
 
 (defvar git-command-history nil
   "History list for `git-command'.")
 
 
-(defvar git-command-view-command-list
-  '("log" "show" "help")
-  "List of commands that will only output something for read.")
-
-(defvar git-command-aliases-alist
-  '(("diff" . (lambda (options cmd args new-buffer-p)
-                (let ((buf (if new-buffer-p
-                               (generate-new-buffer "*git diff*")
-                             (get-buffer-create "*git diff*")))
-                      (dir default-directory))
-                  (with-current-buffer buf
-                    (cd dir)
-                    (erase-buffer)
-                    (shell-command (concat "git "
-                                           (git-command-construct-commandline
-                                            `(,@options "-c" "color.diff=never")
-                                            "diff"
-                                            args))
-                                   t)
-                    (diff-mode))
-                  (display-buffer buf))))
-    ("grep" . (lambda (options cmd args new-buffer-p)
-                (compilation-start (concat "git "
-                                           (git-command-construct-commandline
-                                            `(,@options "--no-pager"
-                                                        "-c" "color.grep=false")
-                                            cmd
-                                            `("-nHe" ,@args)))
-                                   'grep-mode
-                                   (and new-buffer-p
-                                        (lambda (s)
-                                          (generate-new-buffer-name "*git grep*"))))
-                )))
-  "Alist of cons of command and function to run.
-The function should get three argument: see `git-command-exec'.")
-
-(defun git-command-find-git-ps1 (f)
-  "Return F if F exists and it contain function \"__git_ps1\"."
-  (and (file-readable-p f)
-       (with-temp-buffer
-         (insert ". " f "; "
-                 "__git_ps1 %s;")
-         (eq 0 (shell-command-on-region (point-min)
-                                        (point-max)
-                                        "bash -s"
-                                        nil
-                                        t)))
-       f))
-
-(defvar git-command-prompt-file
-  (or (git-command-find-git-ps1 "/usr/share/git/completion/git-prompt.sh")
-      (git-command-find-git-ps1
-       "/opt/local/share/doc/git-core/contrib/completion/git-prompt.sh")
-      (git-command-find-git-ps1 "/etc/bash_completion.d/git")
-      (git-command-find-git-ps1 "/etc/bash_completion.d/git-prompt")
-      (git-command-find-git-ps1
-       "/opt/local/share/git-core/git-prompt.sh")
-      (git-command-find-git-ps1 "/opt/local/etc/bash_completion.d/git")
-      ))
+(defconst git-command--with-git-pager-executable
+  (expand-file-name (concat user-emacs-directory "git-command/pager.sh"))
+  "File path to executable for `git-command-with-git-pager'.")
+;; Remove this file on reloading this library in case of updating.
+(when (file-readable-p git-command--with-git-pager-executable)
+  (delete-file git-command--with-git-pager-executable))
 
 
-(defvar git-command-use-emacsclient
-  nil
-  "If non-nil use emacsclient for editor of git.
-In this case, `server-start' will be called at the first call of `git-command'
-if Emacs server is not running.")
+(defconst git-command--with-git-pager-executable-content
+  "#!/bin/sh
+set -e
+
+tmp=`mktemp ._git-command-with-git-pager-temporary.XXXXXX`
+cat >\"$tmp\"
+sh -s <<__EOF__
+$GIT_EDITOR \
+  --eval \"(git-command--with-pager-display-contents \\\"$tmp\\\")\"
+__EOF__
+rm -f \"$tmp\"
+"
+  "Script content for `git-command--with-git-pager-executable'.")
+
+
+(defvar git-command--pager-buffer-create-new nil
+  "Non-nil to create new buffer for each GIT_PAGER invocation.
+
+This variable is used internally only.")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; utility
-
-(defun git-command--git-dir ()
-  "Execute \"git rev-parse --git-dir\" and return result string or nil."
-  (with-temp-buffer
-    (and (eq 0
-             (call-process "git"
-                           nil
-                           t
-                           nil
-                           "rev-parse" "--git-dir"))
-         (progn (goto-char (point-min))
-                (buffer-substring-no-properties (point-at-bol)
-                                                (point-at-eol))))))
-
-(defun git-command-ps1 (fmt)
-  "Generate git ps1 string from FMT and return that string."
-  (let ((gcmpl (or git-command-prompt-file))
-        (process-environment `(,(concat "GIT_PS1_SHOWDIRTYSTATE="
-                                        git-command-ps1-showdirtystate)
-                               ,(concat "GIT_PS1_SHOWSTASHSTATE="
-                                        git-command-ps1-showstashstate)
-                               ,(concat "GIT_PS1_SHOWUNTRACKEDFILES="
-                                        git-command-ps1-showuntrackedfiles)
-                               ,(concat "GIT_PS1_SHOWUPSTREAM="
-                                        git-command-ps1-showupstream)
-                               ,@process-environment)))
-    (if (and (executable-find "bash")
-             gcmpl
-             (file-readable-p gcmpl))
-        (with-temp-buffer
-          (insert ". " gcmpl
-                  "; __git_ps1 "
-                  (shell-quote-argument fmt)
-                  ";")
-          (shell-command-on-region (point-min)
-                                   (point-max)
-                                   "bash -s"
-                                   nil
-                                   t)
-          (buffer-substring-no-properties (point-min)
-                                          (point-max)))
-      "")))
-
-(defun git-command-get-alias-function (cmd)
-  "Return alias function for CMD if available in `git-command-alias-alist'."
-  (cdr (assoc cmd
-              git-command-aliases-alist)))
-
-;; commandline parsing
-(defun git-command-construct-commandline (options command args)
-  "Construct one commandline string from OPTIONS COMMAND and ARGS.
-TODO: how to do about `git-command-default-options'?
-The string returned does not start with \"git\" so this should be concat-ed.
-
-About these arguments see document of `git-command-parse-commandline'."
-  (mapconcat 'shell-quote-argument
-             `(,@options ,command ,@args)
-             " "))
-
-(defun git-command-parse-commandline (str)
-  "Parse commandline string STR into a list like (OPTIONS COMMAND ARGUMENT)."
-  (git-command-part-commands-with-subcommand
-   (git-command-shell-split-string
-    str)))
-
-(defun git-command-shell-split-string (str)
-  "Split string STR into strings by shell."
-  (let ((emacs-bin (concat invocation-directory
-                           invocation-name)))
-    (cdr (read (shell-command-to-string (concat emacs-bin
-                                                " -Q --batch --eval '(prin1 command-line-args-left)' -- "
-                                                str
-                                                " 2>/dev/null"))))))
-
-(defun git-command-part-commands-with-subcommand (l)
-  "Partition git args list L into (OPTIONS COMMAND ARGUMENTS) and return it.
-Only COMMAND is string, others are lists.
-OPTIONS is distinguished by if they start with hyphens.
-\"-c\" option is a special case which takes one parameter."
-  (let ((i (git-command-find-subcommand l)))
-    ;; make list that contains from 0th to ith element
-    (list
-     ;; OPTIONS
-     (if (eq 0
-             i)
-         nil
-       (let ((ol (copy-sequence l)))
-         (setcdr (nthcdr (- i 1)
-                         ol)
-                 nil)
-         ol))
-     ;; COMMAND
-     (or (nth i
-              l)
-         "")
-     ;; ARGUMENTS
-     (nthcdr (1+ i)
-             l)
-     )))
-
-(defun git-command-find-subcommand (l &optional index)
-  "Find subcommand from list L and return the index number.
-Options that lead subcommand are distinguished by if they start with hyphens.
-\"-c\" option is a special case which take one parameter.
-If no subcommand was found, returns the length of L.
-
-INDEX is always the original index of car of L.
-The value nil is equivalent to 0."
-  (let ((options-w-param '("-c"))
-        (first (car l))
-        (rest (cdr l))
-        (i (or index
-               0)))
-    (if l
-
-        ;; l is not empty
-        (if (member first
-                    options-w-param)
-            ;; if first is the command that requires a parameter, skip the parameter
-            (if rest
-                (git-command-find-subcommand (cdr rest)
-                                             (+ 2 i))
-              ;; Only -c is given: this is undesirable situation, but anyway returns the length of original L
-              (1+ i)
-              )
-
-          (if (eq ?-
-                  (aref first
-                        0))
-              ;; the first element is not in optinos-w-params but
-              ;; the first letter of first element of L is '-'
-              (git-command-find-subcommand rest
-                                           (1+ i))
-            i))
-
-      ;; if L is empty returns the original length of L
-      i)))
+;; pager
 
 
-;; emacs client
+(defun git-command--with-pager-display-contents (filename)
+  "Insert contents of FILENAME in a buffer and popup with `display-buffer'."
+  (let ((buf (if git-command--pager-buffer-create-new
+                  (generate-new-buffer "*git pager*")
+                (when (get-buffer "*git pager*")
+                  (kill-buffer "*git pager*"))
+                (get-buffer-create "*git pager*"))))
+    (with-current-buffer buf
+      (insert-file-contents filename)
+      (ansi-color-apply-on-region (point-min)
+                                  (point-max)))
+    (display-buffer buf)))
 
-(defun git-command--construct-emacsclient-command ()
-  "Construct and return command in a string to connect to current Emacs server."
-  (if server-use-tcp
-      (format "%s -f \"%s/%s\""
-              "emacsclient"
-              (expand-file-name server-auth-dir)
-              server-name)
-    (format "%s -s \"%s/%s\""
-            "emacsclient"
-            server-socket-dir
-            server-name)))
+
+(defmacro git-command-with-git-editor-git-pager (&rest body)
+  "Evaluate BODY with $GIT_EDITOR and $GIT_PAGER are set."
+  (declare (indent defun) (debug (body)))
+  `(with-editor "GIT_EDITOR"
+     (let ((process-environment (cons (format "GIT_PAGER=%s"
+                                              git-command--with-git-pager-executable)
+                                      process-environment)))
+       (unless (file-readable-p git-command--with-git-pager-executable)
+         ;; Create executable for GIT_PAGER
+         (make-directory (file-name-directory git-command--with-git-pager-executable)
+                         t)
+         (with-temp-buffer
+           (insert git-command--with-git-pager-executable-content)
+           (write-region (point-min)
+                         (point-max)
+                         git-command--with-git-pager-executable))
+         (set-file-modes git-command--with-git-pager-executable
+                         #o755))
+
+       ,@body)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; user commands
 
+;;;###autoload
 (defun git-command (cmd &optional new-buffer-p)
-  "Shell like git command interface.  CMD is the commandline strings to run.
+  "Invoke git shell command.
+While running git command, $GIT_EDITOR and $GIT_PAGER are set to use emacsclient
+to open files and get outputs.
 
-If NEW-BUFFER-P is non-nil, generate new buffer for running command."
-  (interactive (list (read-shell-command (format "[%s]%s $ git : "
+CMD is command line string to run.
+Called interactively, asks users what command line to invoke.
+
+If NEW-BUFFER-P is non-nil, generate new buffer for running command.
+Interactively, give prefix argument for new buffer."
+  (interactive (list (read-shell-command (format "[%s]%s $ "
                                                  (abbreviate-file-name
                                                   default-directory)
-                                                 (git-command-ps1 "[GIT:%s]"))
-                                         nil
+                                                 (git-ps1-mode-get-current "[GIT:%s]"))
+                                         git-command-default-command
                                          'git-command-history)
                      current-prefix-arg))
-  (apply 'git-command-exec (append (git-command-parse-commandline cmd)
-                                   (list new-buffer-p))))
-
-(defun git-command-exec (options command args &optional new-buffer-p)
-  "Execute git.
-
-This function accept three arguments.  OPTIONS is a list of options that will be
-passed to git itself.  Tipically they are appeared before the git subcommand.
-COMMAND is a string of git subcommand.  ARGS is a list of arguments for git
-subcommand.
-
-These arguments are tipically constructed with `git-command-parse-commandline'.
-
-Set optional argument NEW-BUFFER-P to non-nil to generate new buffer for the
-process."
-  (let ((alias (git-command-get-alias-function command)))
-    (if alias
-        ;; if alias is defined in git-command-get-alias-function
-        (funcall alias
-                 options command args new-buffer-p)
-      (if (member command
-                  git-command-view-command-list)
-          ;; if this command is a view command
-          (let* ((bname (concat "*"
-                                "git "
-                                command
-                                "*"))
-                 (bf (if new-buffer-p (generate-new-buffer bname)
-                       (and (get-buffer bname)
-                            (kill-buffer bname))
-                       (get-buffer-create bname))))
-            (display-buffer bf)
-            (with-current-buffer bf
-              (let ((inhibit-read-only t))
-                (erase-buffer)
-                (if (fboundp 'ansi-color-apply-on-region)
-                    (progn
-                      (shell-command (concat "git "
-                                             (git-command-construct-commandline
-                                              `(,@git-command-default-options
-                                                ,@options
-                                                "-c"
-                                                "color.ui=always")
-                                              command
-                                              args))
-                                     t)
-                      (ansi-color-apply-on-region (point-min)
-                                                  (point-max)))
-                  (shell-command (concat "git "
-                                         (git-command-construct-commandline
-                                          `(,@git-command-default-options
-                                            ,@options "-c" "color.ui=never")
-                                          command
-                                          args))
-                                 t))
-                (fundamental-mode)
-                (view-mode))))
-        ;; if this command is not a view command
-        (and git-command-use-emacsclient
-             (require 'server nil t)
-             (not (server-running-p))
-             (server-start))
-        (let ((process-environment
-               (if git-command-use-emacsclient
-                   `(,(concat "GIT_EDITOR="
-                              (git-command--construct-emacsclient-command))
-                     ,@process-environment)
-                 process-environment)))
-          (term-run
-           shell-file-name
-           (if new-buffer-p
-               (generate-new-buffer "*git command*")
-             "*git command*")
-           shell-command-switch
-           (concat "git "
-                   (git-command-construct-commandline
-                    ;; TODO: fix colorize: currently output is not colorized
-                    `(,@git-command-default-options
-                      ,@options "-c" "color.ui=always")
-                    command
-                    args))
-           ))))))
-
-(defun git-command-term-run (program &optional buffer-or-name &rest args)
-  "Run PROGRAM in terminal emulator.
-If BUFFER-OR-NAME is given, use this buffer.  In this case, old process in the
-buffer is destroyed.  Otherwise, new buffer is generated automatically from
-COMMAND.
-ARGS will be passed to PROGRAM.
-
-This function (`git-command-term-run') is deprecated and no more maintained:
-use `term-run' instead.
-This function is defined as a fallback if `term-run' is not available,"
-  (message "Using fallback function git-command-term-run.")
-  (message "Please install term-run package.")
-  (let* ((name program)
-         (buf (if buffer-or-name
-                  (get-buffer-create buffer-or-name)
-                (generate-new-buffer (concat "*"
-                                             name
-                                             "*"))))
-         (proc (get-buffer-process buf))
-         (dir default-directory))
-    (and proc
-         (delete-process proc))
-    (display-buffer buf)
-    (with-current-buffer buf
-      (cd dir)
-      (set (make-local-variable 'term-scroll-to-bottom-on-output)
-           t)
-      (let ((inhibit-read-only t))
-        (goto-char (point-max))
-        (insert "\n")
-        (insert "Start executing "
-                program)
-        (add-text-properties (point-at-bol)
-                             (point-at-eol)
-                             '(face bold))
-        (insert "\n\n"))
-      (require 'term)
-      (term-mode)
-      (term-exec buf
-                 (concat "term-" name)
-                 program
-                 nil
-                 args)
-      (term-char-mode)
-      (if (ignore-errors (get-buffer-process buf))
-          (set-process-sentinel (get-buffer-process buf)
-                                (lambda (proc change)
-                                  (with-current-buffer (process-buffer proc)
-                                    (term-sentinel proc change)
-                                    (goto-char (point-max)))))
-        ;; (goto-char (point-max))
-        ))))
-
-(unless (fboundp 'term-run)
-  (fset 'term-run 'git-command-term-run))
+  (setq git-command--pager-buffer-create-new
+        new-buffer-p)
+  (git-command-with-git-editor-git-pager
+    (term-run shell-file-name
+              (if new-buffer-p
+                  (generate-new-buffer "*git command*")
+                "*git command*")
+              shell-command-switch
+              cmd)))
 
 (provide 'git-command)
 
