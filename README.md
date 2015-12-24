@@ -6,6 +6,10 @@ git-command.el
 ===============
 
 
+
+![ss](ss.png)
+
+
 Dead simple git interface.
 
 This packgage provides a way to invoke Git from a command-line interface using
