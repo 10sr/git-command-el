@@ -35,7 +35,8 @@ invocation.
 Completion
 -----------
 
-It is highly recommended to Install `pcmpl-git` with this package.
+It is highly recommended to Install [`pcmpl-git`](http://melpa.org/#/pcmpl-git)
+with this package.
 That enables completion when entering git command interactively.
 
 
