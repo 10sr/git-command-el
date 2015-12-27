@@ -10,26 +10,24 @@ git-command.el
 ![ss](ss.png)
 
 
-Dead simple git interface.
+Yet another Git interface.
 
-This packgage provides a way to invoke Git from a command-line interface using
-minibuffer.
-While runnning git command, `$GIT_EDITOR` and `$GIT_PAGER` are set nicely so you
-can use emacsclient to open files and get outputs.
+This packgage provides a way to invoke Git shell command using minibuffer.
+There is no major-mode nor minor-mode, you just have to remember usual Git
+subcommands and options.
 
+This package provides only one user command: type
 
-Usage
------
+    M-x RET git-command
 
-This package provides only one user command:
-
-    M-x git-command
-
-to interactively give git command and just invoke that command with
-`$GIT_EDITOR` and `$GIT_PAGER` are set to use emacsclient.
+to input Git shell command to minibuffer that you want to invoke.
+Before runnning git command `$GIT_EDITOR` and `$GIT_PAGER` are set nicely so
+that you can seamlessly edit files or get pager outputs with Emacs you are
+currently working on.
 
 Optionally, you can give prefix argument to create a new buffer for that git
 invocation.
+
 
 
 Completion

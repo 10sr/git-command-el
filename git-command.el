@@ -1,4 +1,4 @@
-;;; git-command.el --- Dead Simple Git Interface
+;;; git-command.el --- Yet another Git interface
 
 ;; Author: 10sr <8slashes+el [at] gmail [dot] com>
 ;; URL: https://github.com/10sr/git-command-el
@@ -35,12 +35,25 @@
 
 ;;; Commentary:
 
-;; This packgage provides a way to invoke Git from a command-line interface
-;; using minibuffer. While runnning git command, $GIT_EDITOR and $GIT_PAGER are
-;; set nicely so you can use emacsclient to open files and get outputs.
+;; This packgage provides a way to invoke Git shell command using minibuffer.
+;; There is no major-mode nor minor-mode, you just have to remember usual Git
+;; subcommands and options.
+
+;; This package provides only one user command: type
+
+;;     M-x RET git-command
+
+;; to input Git shell command to minibuffer that you want to invoke.
+;; Before runnning git command `$GIT_EDITOR` and `$GIT_PAGER` are set nicely so
+;; that you can seamlessly edit files or get pager outputs with Emacs you are
+;; currently working on.
+
+;; Optionally, you can give prefix argument to create a new buffer for that git
+;; invocation.
 
 
 ;; Completion
+;; ----------
 
 ;; It is highly recommended to Install `pcmpl-git` with this package to enable
 ;; completion when entering git command interactively.
@@ -152,8 +165,8 @@ This variable is used internally only.")
 While running git command, $GIT_EDITOR and $GIT_PAGER are set to use emacsclient
 to open files and get outputs.
 
-CMD is command line string to run.
-Called interactively, asks users what command line to invoke.
+CMD is shell command string to run.
+Called interactively, asks users what shell command to invoke.
 
 If NEW-BUFFER-P is non-nil, generate new buffer for running command.
 Interactively, give prefix argument for new buffer."
