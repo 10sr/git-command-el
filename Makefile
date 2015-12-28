@@ -16,7 +16,7 @@ test: build test-ert
 build: $(elc)
 
 $(elc): %.elc: %.el
-	$(emacs) -batch -Q -L mocks -f batch-byte-compile $<
+	$(emacs) -batch -Q -L test/mocks -f batch-byte-compile $<
 
 
 test-ert:
