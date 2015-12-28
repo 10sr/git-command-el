@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/10sr/git-command-el.svg?branch=master)](https://travis-ci.org/10sr/git-command-el)
-
-
+[![MELPA](https://melpa.org/packages/git-command-badge.svg)](https://melpa.org/#/git-command)
+[![MELPA Stable](https://stable.melpa.org/packages/git-command-badge.svg)](https://stable.melpa.org/#/git-command)
 
 git-command.el
 ===============
