@@ -6,11 +6,11 @@ git-command.el
 ===============
 
 
+Yet another Git interface.
+
 
 ![ss](ss.png)
 
-
-Yet another Git interface.
 
 This packgage provides a way to invoke Git shell command using minibuffer.
 There is no major-mode nor minor-mode, you just have to remember usual Git
