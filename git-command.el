@@ -3,7 +3,7 @@
 ;; Author: 10sr <8slashes+el [at] gmail [dot] com>
 ;; URL: https://github.com/10sr/git-command-el
 ;; Version: 0.2.0
-;; Package-Requires: ((term-run "20150601.6") (with-editor "20151126.323") (git-ps1-mode "20151220.415") (ansi-color "0"))
+;; Package-Requires: ((term-run "0.1.4") (with-editor "2.3.1") (git-ps1-mode "0.2.0"))
 ;; Keywords: utility git
 
 ;; This file is not part of GNU Emacs.
