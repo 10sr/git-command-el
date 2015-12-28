@@ -173,7 +173,8 @@ Interactively, give prefix argument for new buffer."
   (interactive (list (read-shell-command (format "[%s]%s $ "
                                                  (abbreviate-file-name
                                                   default-directory)
-                                                 (git-ps1-mode-get-current "[GIT:%s]"))
+                                                 (or (git-ps1-mode-get-current "[GIT:%s]")
+                                                     ""))
                                          git-command-default-command
                                          'git-command-history)
                      current-prefix-arg))
