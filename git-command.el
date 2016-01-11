@@ -3,7 +3,7 @@
 ;; Author: 10sr <8slashes+el [at] gmail [dot] com>
 ;; URL: https://github.com/10sr/git-command-el
 ;; Version: 0.2.0
-;; Package-Requires: ((term-run "0.1.4") (with-editor "2.3.1") (git-ps1-mode "0.2.0"))
+;; Package-Requires: ((term-run "0.1.4") (with-editor "2.3.1"))
 ;; Keywords: utility git
 
 ;; This file is not part of GNU Emacs.
@@ -61,11 +61,11 @@
 
 ;;; Code:
 
-(require 'term)
 (require 'term-run)
-(require 'ansi-color)
 (require 'with-editor)
-(require 'git-ps1-mode)
+
+(require 'term)
+(require 'ansi-color)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -170,11 +170,7 @@ Called interactively, asks users what shell command to invoke.
 
 If NEW-BUFFER-P is non-nil, generate new buffer for running command.
 Interactively, give prefix argument for new buffer."
-  (interactive (list (read-shell-command (format "[%s]%s $ "
-                                                 (abbreviate-file-name
-                                                  default-directory)
-                                                 (or (git-ps1-mode-get-current "[GIT:%s]")
-                                                     ""))
+  (interactive (list (read-shell-command "Git shell command: "
                                          git-command-default-command
                                          'git-command-history)
                      current-prefix-arg))
