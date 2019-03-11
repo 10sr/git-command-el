@@ -6,7 +6,7 @@ git-command.el
 ===============
 
 
-Yet another Git interface.
+Git Command-Line interface.
 
 
 ![ss](ss.png)
@@ -34,8 +34,7 @@ Completion
 -----------
 
 It is highly recommended to Install [`pcmpl-git`](http://melpa.org/#/pcmpl-git)
-with this package.
-That enables completion when entering git command interactively.
+with this package to enable completion when entering git command interactively.
 
 
 

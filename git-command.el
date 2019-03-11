@@ -1,4 +1,4 @@
-;;; git-command.el --- Yet another Git interface
+;;; git-command.el --- Git Command-Line interface
 
 ;; Author: 10sr <8slashes+el [at] gmail [dot] com>
 ;; URL: https://github.com/10sr/git-command-el
@@ -35,7 +35,7 @@
 
 ;;; Commentary:
 
-;; This package provides a way to invoke Git shell command using minibuffer.
+;; This package provides a way to invoke Git shell command from minibuffer.
 ;; There is no major-mode nor minor-mode, you just have to remember usual Git
 ;; subcommands and options.
 
