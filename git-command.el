@@ -123,14 +123,17 @@ This variable is used internally only.")
 (defun git-command--with-pager-display-contents (filename)
   "Insert contents of FILENAME in a buffer and popup with `display-buffer'."
   (let ((buf (if git-command--pager-buffer-create-new
-                  (generate-new-buffer "*git pager*")
-                (when (get-buffer "*git pager*")
-                  (kill-buffer "*git pager*"))
-                (get-buffer-create "*git pager*"))))
+                 (generate-new-buffer "*git pager*")
+               ;; TODO: Use erase-buffer instead of kill-buffer
+               (when (get-buffer "*git pager*")
+                 (kill-buffer "*git pager*"))
+               (get-buffer-create "*git pager*"))))
     (with-current-buffer buf
-      (insert-file-contents filename)
-      (ansi-color-apply-on-region (point-min)
-                                  (point-max)))
+      (let ((inhibit-read-only t))
+        (insert-file-contents filename)
+        (ansi-color-apply-on-region (point-min)
+                                    (point-max))))
+    (setq buffer-read-only t)
     (display-buffer buf)))
 
 
