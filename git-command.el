@@ -132,8 +132,8 @@ This variable is used internally only.")
       (let ((inhibit-read-only t))
         (insert-file-contents filename)
         (ansi-color-apply-on-region (point-min)
-                                    (point-max))))
-    (setq buffer-read-only t)
+                                    (point-max)))
+      (setq buffer-read-only t))
     (display-buffer buf)))
 
 
